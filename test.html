@@ -1,1 +1,563 @@
-Test!
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chart Visualizer</title>
+    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+    <style>
+        body {
+            padding: 0;
+            margin: 0;
+            background-color: #2A2E39; /* Background color of the page */
+            color: #F8F8F9;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        #layout-container {
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* Chart wrapper holding both charts */
+        #chart-wrapper {
+            width: 84%;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        /* Section labels for Weekly and Daily charts */
+        #label-container {
+            font-size: 16px;
+            display: flex;
+            justify-content: space-between;
+            max-width: 1618px;
+            background-color: #131722;
+            padding-top: 20px;
+            padding-bottom: 20px;
+            padding-left: 40px;
+            border-top-left-radius: 16px;
+            border-top-right-radius: 16px;
+        }
+
+        .chart-label {
+            font-weight: bold;
+            width: 50%; /* Split into two columns, 50% each */
+            text-align: left;
+        }
+
+        /* Container for the charts with the red and blue borders */
+        #chart-container {
+            display: flex;
+            max-width: 1656px;
+            justify-content: space-between;
+            border: 1px solid #1E2025; /* 1-pixel red border */
+            box-shadow: 0 0 0 1px #2A2E39; /* 1-pixel blue border outside the red one */
+            width: 100%;
+            height: 640px;
+        }
+
+        /* Fixed width and height for each chart */
+        #daily-chart, #weekly-chart {
+            width: 100%; /* Fixed width for the charts */
+            height: 550px;
+        }
+
+        /* Right column reserved for watchlist and future content */
+        #right-column {
+            display: flex;
+            flex-direction: column;
+            background-color: #131722;
+        }
+
+        /* Watchlist section at the top of the right column */
+        #watchlist {
+            font-weight: bold;
+            text-align: left;
+        }
+
+
+/* Gap input styling */
+input[type="number"] {
+    -moz-appearance: none;  /* Firefox */
+    -webkit-appearance: none;    /* Chrome, Safari, Opera */
+    appearance: none; 
+    background-color: #131722;
+    color: #F8F8F9;
+    border: 2px solid #2A2E39;
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 8px;
+    width: 100px;
+    text-align: center;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type="number"]:focus {
+    outline: none;
+    border-color: hsla(240, 8%, 97%, 0.377); /* Highlight border on focus */
+}
+
+/* Button styling */
+button {
+    background-color: transparent;
+    color: #f8f8f9;
+    border: none;
+    padding: 10px 10px;
+    cursor: pointer;
+    font-size: 16px;
+    border-radius: 8px;
+    margin: 0 5px;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #2A2E39;
+}
+
+#controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-top: 20px;
+    padding: 10px;
+    background-color: #131722;
+    border-radius: 10px;
+}
+
+
+#watchlist-items {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 120px); /* Adjust the height dynamically based on viewport */
+    overflow-y: auto; /* Enable scrolling when items exceed the height */
+    scrollbar-width: none; /* Hide the scrollbar in Firefox */
+    font-size: 14px;
+    font-weight: bold;
+}
+
+#watchlist-items::-webkit-scrollbar {
+    display: none; /* Hide the scrollbar in Chrome, Safari, and Edge */
+}
+
+
+
+
+/* Styling for watchlist items */
+.watchlist-item {
+    cursor: pointer;
+    padding: 10px;
+    border-bottom: 1px solid #2A2E39;
+    color: #F8F8F9;
+}
+
+.watchlist-item:hover {
+    background-color: #2A2E39;
+    color: #26A69A;
+}
+
+
+    </style>
+</head>
+<body>
+
+    <div id="layout-container">
+        
+        <!-- Left: Charts Area -->
+        <div id="chart-wrapper">
+            <div id="symbol-container" style="background-color: #131722; padding: 20px 40px; margin-bottom: 20px; border-radius: 10px;">
+                <span id="symbol" style="font-size: 28px; font-weight: bold; color: #F8F8F9;">COMP</span>
+            </div>
+            
+            
+            <!-- Chart Labels -->
+            <div id="label-container">
+                <div class="chart-label">Weekly</div>
+                <div class="chart-label">Daily</div>
+            </div>
+
+            <!-- Container for charts with a border around both -->
+            <div id="chart-container">
+                <!-- Weekly Chart on the left -->
+                <div id="weekly-chart"></div>
+
+                <!-- Daily Chart on the right -->
+                <div id="daily-chart"></div>
+            </div>
+            <!-- Add a div for gap input and preset buttons -->
+            <div id="controls" style="text-align: center; margin-top: 20px;">
+                <label for="gap-input">Gap up (%): </label>
+                <input type="number" id="gap-input" value="0.5" step="0.1" style="width: 80px; margin-right: 10px;" />
+                <button onclick="simulateFutureBar(4)">Simulate 4% Bar</button>
+                <button onclick="simulateFutureBar(8)">Simulate 8% Bar</button>
+                <button onclick="simulateFutureBar(12)">Simulate 12% Bar</button>
+            </div>
+            
+
+        </div>
+
+        <!-- Right column, reserved for watchlist (100px for watchlist) -->
+<!-- Right column, reserved for watchlist (100px for watchlist) -->
+<!-- Right column, reserved for watchlist (100px for watchlist) -->
+<div id="right-column" style="background-color: #131722; max-width: 11%; padding: 28px;">
+    <!-- Watchlist Header -->
+    <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; border-bottom: 1px solid #2A2E39;">
+        <div id="watchlist" style="font-weight: bold; color: #F8F8F9;">Watchlist</div>
+        
+        <!-- Watchlist Buttons -->
+        <div style="display: flex; margin-left: 33px;">
+            <input type="file" id="upload-watchlist" accept=".txt" style="display: none;" onchange="uploadWatchlist()">
+            <button style="background-color: transparent; border: none;" onclick="document.getElementById('upload-watchlist').click()">
+                <img src="BlueUploadButton.svg" alt="Upload" style="width: 24px; height: 24px; fill: #F8F8F9;" />
+            </button>
+            <button style="background-color: transparent; border: none;" onclick="clearWatchlist()">
+                <img src="RedTrash.svg" alt="Clear" style="width: 24px; height: 24px; fill: #F8F8F9;" />
+            </button>
+            
+             </div>
+    </div>
+
+    <!-- Watchlist Items (Populated Dynamically) -->
+    <div id="watchlist-items" style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;">
+        <!-- Watchlist tickers will appear here -->
+    </div>
+</div>
+
+    </div>
+
+    <script>
+
+let currentTicker = 'NVDA';  // Default to NVDA initially
+
+// Handle watchlist upload
+function uploadWatchlist() {
+    const file = document.getElementById('upload-watchlist').files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const text = e.target.result;
+            let watchlist = text.split(',').map(item => item.trim()); // Split by comma and trim
+
+            // Remove the exchange before the colon and keep only the ticker
+            watchlist = watchlist.map(ticker => {
+                if (ticker.includes(':')) {
+                    return ticker.split(':')[1].trim(); // Return the part after the colon
+                }
+                return ticker; // Return as is if no colon found
+            });
+
+            populateWatchlist(watchlist);
+        };
+        reader.readAsText(file);
+    }
+}
+
+let selectedItem = null; // Variable to store the selected item
+
+// Populate the watchlist items
+function populateWatchlist(watchlist) {
+    const watchlistItems = document.getElementById('watchlist-items');
+    watchlistItems.innerHTML = ''; // Clear existing items
+
+    watchlist.forEach(ticker => {
+        const tickerElement = document.createElement('div');
+        tickerElement.textContent = ticker;
+        tickerElement.className = 'watchlist-item';
+        tickerElement.style.padding = '10px';
+        tickerElement.style.borderBottom = '1px solid #2A2E39';
+        tickerElement.style.cursor = 'pointer';
+        tickerElement.style.color = '#F8F8F9';
+        tickerElement.style.backgroundColor = 'transparent';
+        tickerElement.onmouseover = () => tickerElement.style.backgroundColor = '#2A2E39';
+        tickerElement.onmouseleave = () => {
+            if (tickerElement !== selectedItem) {
+                tickerElement.style.backgroundColor = 'transparent'; // Only reset if it's not selected
+            }
+        };
+
+        // Click event to load ticker data and set background to red
+        tickerElement.addEventListener('click', () => {
+            fetchDataForTicker(ticker);
+            if (selectedItem) {
+                selectedItem.style.backgroundColor = 'transparent'; // Reset previous selection
+            }
+            tickerElement.style.backgroundColor = '#2A2E39'; // Set background to red for selected item
+            selectedItem = tickerElement; // Update the selected item
+        });
+
+        watchlistItems.appendChild(tickerElement);
+    });
+}
+
+
+    // Clear the watchlist
+    function clearWatchlist() {
+        document.getElementById('watchlist-items').innerHTML = '';
+    }
+
+
+
+        // Create distinct charts for daily and weekly with a black background
+        const dailyChart = LightweightCharts.createChart(document.getElementById('daily-chart'), {
+            width: 806,
+            height: 640, // Fixed height for the daily chart
+            layout: {
+                background: { color: '#000000' }, // Black background for the chart
+                textColor: '#575A65',               // Text color
+            },
+            grid: {
+                vertLines: { color: '#000000' },   // Black gridlines for vertical
+                horzLines: { color: '#000000' },   // Black gridlines for horizontal
+            },
+        });
+
+        const weeklyChart = LightweightCharts.createChart(document.getElementById('weekly-chart'), {
+            width: 806,
+            height: 640, // Fixed height for the weekly chart
+            layout: {
+                background: { color: '#000000' }, // Black background for the chart
+                textColor: '#575A65',               // Text color
+            },
+            grid: {
+                vertLines: { color: '#000000' },   // Black gridlines for vertical
+                horzLines: { color: '#000000' },   // Black gridlines for horizontal
+            },
+        });
+
+        // Hollow Candle Logic Function
+        function determineCandleStyle(current, previous) {
+            const isUpward = current.close > current.open;
+            const closedHigherThanPrevious = current.close > previous.close;
+
+            if (isUpward && closedHigherThanPrevious) {
+                return {
+                    bodyColor: 'transparent',
+                    borderColor: '#26A69A', // Green border for upward movement
+                    wickColor: '#26A69A',   // Green wick
+                };
+            } else if (!isUpward && closedHigherThanPrevious) {
+                return {
+                    bodyColor: '#26A69A',
+                    borderColor: '#26A69A',
+                    wickColor: '#26A69A',
+                };
+            } else if (isUpward && !closedHigherThanPrevious) {
+                return {
+                    bodyColor: 'transparent',
+                    borderColor: '#F23645', // Red border for downward movement
+                    wickColor: '#F23645',
+                };
+            } else {
+                return {
+                    bodyColor: '#F23645',
+                    borderColor: '#F23645',
+                    wickColor: '#F23645',
+                };
+            }
+        }
+
+        function applyCandleStyles(data) {
+            return data.map((current, index) => {
+                const previous = data[index - 1] || current;
+                const styles = determineCandleStyle(current, previous);
+
+                return {
+                    time: current.time,
+                    open: current.open,
+                    high: current.high,
+                    low: current.low,
+                    close: current.close,
+                    color: styles.bodyColor,
+                    borderColor: styles.borderColor,
+                    wickColor: styles.wickColor,
+                };
+            });
+        }
+
+        const dailyCandlestickSeries = dailyChart.addCandlestickSeries({
+            priceLineVisible: true,
+            priceLineColor: '#26A69A',  // Set green price line color for new bar
+        });
+
+        const weeklyCandlestickSeries = weeklyChart.addCandlestickSeries({
+            priceLineVisible: true,
+            priceLineColor: '#26A69A',  // Set green price line color for new bar
+        });
+
+        const dailyEMA10Series = dailyChart.addLineSeries({
+    color: '#275EF5',
+    lineWidth: 1,
+    priceLineVisible: false,  // Hide the price line
+    lastValueVisible: false   // Hide the label on the price scale
+});
+
+const dailyEMA20Series = dailyChart.addLineSeries({
+    color: '#F9DC00',
+    lineWidth: 1,
+    priceLineVisible: false,  // Hide the price line
+    lastValueVisible: false   // Hide the label on the price scale
+});
+
+const dailySMA50Series = dailyChart.addLineSeries({
+    color: '#49A94D',
+    lineWidth: 1,
+    priceLineVisible: false,  // Hide the price line
+    lastValueVisible: false   // Hide the label on the price scale
+});
+
+
+const weeklyEMA10Series = weeklyChart.addLineSeries({
+    color: '#275EF5',
+    lineWidth: 1,
+    priceLineVisible: false,  // Hide the price line
+    lastValueVisible: false   // Hide the label on the price scale
+});
+
+const weeklyEMA20Series = weeklyChart.addLineSeries({
+    color: '#F9DC00',
+    lineWidth: 1,
+    priceLineVisible: false,  // Hide the price line
+    lastValueVisible: false   // Hide the label on the price scale
+});
+
+const weeklySMA50Series = weeklyChart.addLineSeries({
+    color: '#49A94D',
+    lineWidth: 1,
+    priceLineVisible: false,  // Hide the price line
+    lastValueVisible: false   // Hide the label on the price scale
+});
+
+
+function fetchDataForTicker(ticker) {
+    // Update global variable for the current ticker
+    currentTicker = ticker;
+
+    // Fetch daily data and weekly data separately
+    Promise.all([
+        fetch(`http://localhost:5000/data/daily?symbol=${ticker}`).then(response => response.json()),
+        fetch(`http://localhost:5000/data/weekly?symbol=${ticker}`).then(response => response.json())
+    ]).then(([dailyData, weeklyData]) => {
+        // Update the symbol display
+        document.getElementById('symbol').textContent = ticker;
+
+        // Update daily chart with the new data
+        const styledDailyCandles = applyCandleStyles(dailyData.daily);
+        dailyCandlestickSeries.setData(styledDailyCandles);
+
+        const dailyEMA10Data = dailyData.daily.map(d => ({ time: d.time, value: d.ema_10 }));
+        const dailyEMA20Data = dailyData.daily.map(d => ({ time: d.time, value: d.ema_20 }));
+        const dailySMA50Data = dailyData.daily.map(d => ({ time: d.time, value: d.ema_50 }));
+
+        dailyEMA10Series.setData(dailyEMA10Data);
+        dailyEMA20Series.setData(dailyEMA20Data);
+        dailySMA50Series.setData(dailySMA50Data);
+
+        // Update weekly chart with the new data
+        const styledWeeklyCandles = applyCandleStyles(weeklyData.weekly);
+        weeklyCandlestickSeries.setData(styledWeeklyCandles);
+
+        const weeklyEMA10Data = weeklyData.weekly.map(d => ({ time: d.time, value: d.ema_10 }));
+        const weeklyEMA20Data = weeklyData.weekly.map(d => ({ time: d.time, value: d.ema_20 }));
+        const weeklySMA50Data = weeklyData.weekly.map(d => ({ time: d.time, value: d.sma_50 }));
+
+        weeklyEMA10Series.setData(weeklyEMA10Data);
+        weeklyEMA20Series.setData(weeklyEMA20Data);
+        weeklySMA50Series.setData(weeklySMA50Data);
+    }).catch(err => {
+        console.error('Error fetching data for ticker:', err);
+    });
+}
+
+function fetchDailyData() {
+    return fetch('http://localhost:5000/data/daily')
+        .then(response => response.json())
+        .then(data => {
+            // Dynamically update the symbol
+            document.getElementById('symbol').innerHTML = `${data.symbol}`;
+
+            const styledCandles = applyCandleStyles(data.daily);
+            dailyCandlestickSeries.setData(styledCandles);
+
+            const ema10Data = data.daily.map(d => ({ time: d.time, value: d.ema_10 }));
+            const ema20Data = data.daily.map(d => ({ time: d.time, value: d.ema_20 }));
+            const sma50Data = data.daily.map(d => ({ time: d.time, value: d.ema_50 }));
+
+            dailyEMA10Series.setData(ema10Data);
+            dailyEMA20Series.setData(ema20Data);
+            dailySMA50Series.setData(sma50Data);
+        })
+        .catch(err => console.error('Error fetching daily data:', err));
+}
+
+
+function fetchWeeklyData() {
+    return fetch('http://localhost:5000/data/weekly')
+        .then(response => response.json())
+        .then(data => {
+            const styledCandles = applyCandleStyles(data.weekly); // Use data.weekly
+            weeklyCandlestickSeries.setData(styledCandles);
+
+            const ema10Data = data.weekly.map(d => ({ time: d.time, value: d.ema_10 })); // Use data.weekly
+            const ema20Data = data.weekly.map(d => ({ time: d.time, value: d.ema_20 }));
+            const sma50Data = data.weekly.map(d => ({ time: d.time, value: d.sma_50 }));
+
+            weeklyEMA10Series.setData(ema10Data);
+            weeklyEMA20Series.setData(ema20Data);
+            weeklySMA50Series.setData(sma50Data);
+        })
+        .catch(err => console.error('Error fetching weekly data:', err));
+}
+
+
+       // Add event listener to automatically update the chart when the gap input changes
+document.getElementById('gap-input').addEventListener('input', function() {
+    const barSize = 8; // Default bar size to 8% when gap changes; you can change this to your preferred behavior
+    simulateFutureBar(barSize);
+});
+
+function simulateFutureBar(barPercentage) {
+    // Get the gap value from the input field
+    const gap = parseFloat(document.getElementById('gap-input').value);
+
+    // Fetch the simulation data for the current ticker
+    fetch(`http://localhost:5000/data/simulate?symbol=${currentTicker}&gap=${gap}&barSize=${barPercentage}`)
+        .then(response => response.json())
+        .then(data => {
+            // Update daily chart with simulated data
+            const dailyStyledCandles = applyCandleStyles(data.daily);
+            dailyCandlestickSeries.setData(dailyStyledCandles);
+
+            // Update weekly chart with simulated data
+            const weeklyStyledCandles = applyCandleStyles(data.weekly);
+            weeklyCandlestickSeries.setData(weeklyStyledCandles);
+
+            // Update EMA and SMA lines
+            dailyEMA10Series.setData(data.daily.map(d => ({ time: d.time, value: d.ema_10 })));
+            dailyEMA20Series.setData(data.daily.map(d => ({ time: d.time, value: d.ema_20 })));
+            dailySMA50Series.setData(data.daily.map(d => ({ time: d.time, value: d.ema_50 })));
+
+            weeklyEMA10Series.setData(data.weekly.map(d => ({ time: d.time, value: d.ema_10 })));
+            weeklyEMA20Series.setData(data.weekly.map(d => ({ time: d.time, value: d.ema_20 })));
+            weeklySMA50Series.setData(data.weekly.map(d => ({ time: d.time, value: d.ema_50 })));
+        })
+        .catch(err => console.error('Error simulating future bars:', err));
+}
+
+
+
+        fetchDailyData().then(() => {
+            fetchWeeklyData();
+        });
+    </script>
+
+</body>
+</html>
