@@ -59,7 +59,7 @@ def create_trade_folder(ticker, date):
     
     # Create HTML and data files for each interval
     for interval in intervals:
-        # Write HTML file
+        # Write HTML file with added logging
         html_content = f"""
         <!DOCTYPE html>
         <html lang="en">
@@ -73,17 +73,25 @@ def create_trade_folder(ticker, date):
             <div id="chart" style="width: 100%; height: 400px;"></div>
 
             <script>
+                console.log("Attempting to fetch JSON data for {interval} interval...");
                 fetch('./data/{interval}.json')
-                .then(response => response.json())
+                .then(response => {{
+                    console.log("Received response for {interval} interval:", response);
+                    return response.json();
+                }})
                 .then(data => {{
+                    console.log("Parsed JSON data for {interval} interval:", data);
                     const chart = LightweightCharts.createChart(document.getElementById('chart'), {{
                         width: 600,
                         height: 400,
                     }});
                     const lineSeries = chart.addLineSeries();
                     lineSeries.setData(data);
+                    console.log("Chart created and data applied for {interval} interval.");
                 }})
-                .catch(error => console.error('Error fetching the data:', error));
+                .catch(error => {{
+                    console.error('Error fetching the data for {interval} interval:', error);
+                }});
             </script>
         </body>
         </html>
