@@ -22,9 +22,24 @@ def fetch_data(ticker, start_date):
     
     # Fetch historical data for each interval
     for interval in intervals:
-        df = stock.history(start=start_date, interval=yf_intervals[interval])
-        # Save as JSON (open, high, low, close)
-        data[interval] = df[['Open', 'High', 'Low', 'Close']].to_dict('records')
+        try:
+            df = stock.history(start=start_date, interval=yf_intervals[interval])
+            # Handle the case where no data is returned (e.g., intraday data for older dates)
+            if df.empty:
+                print(f"No data available for {interval} interval.")
+                data[interval] = []
+            else:
+                # Format the data and add a 'time' field in UNIX timestamp format
+                df.reset_index(inplace=True)  # Reset index to access date
+                df['time'] = df['Datetime'].astype(int) // 10**9  # Convert to UNIX timestamp
+                
+                # Select relevant columns and rename to lowercase
+                data[interval] = df[['time', 'Open', 'High', 'Low', 'Close']].rename(
+                    columns={'Open': 'open', 'High': 'high', 'Low': 'low', 'Close': 'close'}
+                ).to_dict('records')
+        except Exception as e:
+            print(f"Error fetching data for {interval} interval: {e}")
+            data[interval] = []
     
     return data
 
